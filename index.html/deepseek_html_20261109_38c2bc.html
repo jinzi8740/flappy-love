@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🌳 心动森林 · 浪漫Flappy</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(145deg, #1a3a2b 0%, #2b5e3b 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Quicksand', system-ui, sans-serif;
+            padding: 12px;
+            overflow: hidden;
+        }
+
+        .game-wrapper {
+            background: #f9f3e7;
+            border-radius: 48px 48px 32px 32px;
+            padding: 18px 18px 24px;
+            box-shadow: 0 30px 30px rgba(0, 0, 0, 0.3), 0 0 0 2px #ffeacb inset;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 520px;
+            width: 100%;
+            position: relative;
+        }
+
+        /* 顶部导航栏 */
+        .top-nav {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            width: 100%;
+            margin-bottom: 8px;
+        }
+        .nav-btn {
+            background: #fff7ec;
+            border: none;
+            padding: 6px 20px;
+            border-radius: 30px;
+            font-weight: 700;
+            color: #5e4a37;
+            box-shadow: 0 4px 0 #d9b382;
+            cursor: pointer;
+            transition: all 0.1s;
+            font-size: 0.95rem;
+            letter-spacing: 0.5px;
+        }
+        .nav-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #d9b382; }
+        .nav-btn.active { background: #ffd9b0; color: #8b4513; box-shadow: 0 4px 0 #b9804b; }
+
+        /* 页面容器 */
+        .page-container {
+            position: relative;
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .page { display: none; width: 100%; flex-direction: column; align-items: center; }
+        .page.active { display: flex; }
+
+        canvas#gameCanvas {
+            display: block;
+            width: 100%;
+            max-width: 480px;
+            height: auto;
+            border-radius: 28px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            background: #aad6d0;
+            cursor: pointer;
+            touch-action: manipulation;
+            transition: transform 0.1s;
+        }
+        canvas#gameCanvas:active { transform: scale(0.99); }
+
+        .score-board {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin: 12px 0 4px;
+            padding: 0 4px;
+            font-weight: 700;
+            color: #3e2c1b;
+            gap: 8px;
+        }
+        .score, .highscore {
+            background: #fff7ec;
+            padding: 6px 16px;
+            border-radius: 40px;
+            box-shadow: 0 5px 0 #d9b382, 0 6px 14px rgba(0, 0, 0, 0.1);
+            font-size: 1.1rem;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        .score span, .highscore span { color: #b3541e; font-size: 1.5rem; min-width: 56px; text-align: center; }
+        .hint {
+            color: #5e4a37;
+            font-size: 0.8rem;
+            background: #eadbc5;
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-weight: 600;
+            margin-top: 8px;
+            box-shadow: 0 3px 0 #b99e80;
+            text-align: center;
+            width: 100%;
+        }
+
+        /* ===== 我的页面 ===== */
+        .my-tabs {
+            display: flex;
+            gap: 12px;
+            margin: 10px 0 16px;
+            width: 100%;
+            justify-content: center;
+        }
+        .my-tab {
+            background: #fff7ec;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 30px;
+            font-weight: 700;
+            color: #5e4a37;
+            box-shadow: 0 4px 0 #d9b382;
+            cursor: pointer;
+            transition: all 0.1s;
+            font-size: 1rem;
+        }
+        .my-tab.active { background: #ffd9b0; color: #8b4513; box-shadow: 0 4px 0 #b9804b; }
+        .my-tab:active { transform: translateY(2px); box-shadow: 0 2px 0 #d9b382; }
+
+        .my-content { width: 100%; min-height: 500px; display: flex; flex-direction: column; align-items: center; }
+        .record-list {
+            width: 100%;
+            background: #fffdf9;
+            border-radius: 24px;
+            padding: 16px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .record-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border-bottom: 1px dashed #e0d5c5;
+            font-weight: 600;
+            color: #4a3a2a;
+            font-size: 0.95rem;
+        }
+        .record-item:last-child { border-bottom: none; }
+        .record-empty { text-align: center; color: #a0846a; padding: 40px 0; font-weight: 500; }
+
+        /* 收集册 - 银杏树 */
+        .tree-container {
+            width: 100%;
+            height: 500px;
+            background: linear-gradient(180deg, #e6f2e6 0%, #f9f3e7 100%);
+            border-radius: 28px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            box-shadow: inset 0 10px 20px rgba(0,0,0,0.05);
+            border: 2px solid #d9b382;
+        }
+        .tree-svg { width: 90%; height: auto; max-height: 460px; }
+        .leaves-heart {
+            position: absolute;
+            bottom: 40px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 4px;
+            pointer-events: none;
+        }
+        .heart-leaf { font-size: 1.2rem; opacity: 0.8; animation: floatLeaf 3s ease-in-out infinite; }
+        @keyframes floatLeaf { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-5px) rotate(10deg); } }
+        .tree-hint { position: absolute; top: 20px; color: #8b5a2b; font-weight: 600; font-size: 0.9rem; opacity: 0.7; }
+
+        /* 收集册书本 */
+        .book-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(30,20,10,0.7);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            visibility: hidden;
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 200;
+            padding: 16px;
+        }
+        .book-modal.show { visibility: visible; opacity: 1; }
+        .book {
+            width: 100%;
+            max-width: 420px;
+            height: 560px;
+            background: #fff9f0;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4), inset 0 0 0 2px #e0d5c5;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transform: rotateY(90deg);
+            transition: transform 0.5s cubic-bezier(0.2, 1, 0.3, 1);
+        }
+        .book-modal.show .book { transform: rotateY(0deg); }
+        .book-page {
+            flex: 1;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+            background: #fffdf8;
+            border-radius: 24px;
+            overflow-y: auto;
+        }
+        .page-num { position: absolute; bottom: 12px; right: 24px; color: #a0846a; font-size: 0.8rem; }
+        .fragment-display {
+            width: 180px;
+            height: 180px;
+            border-radius: 20px;
+            background: #f0e6d8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            margin-bottom: 20px;
+            box-shadow: inset 0 4px 10px rgba(0,0,0,0.1);
+            border: 2px dashed #d9b382;
+            overflow: hidden;
+            position: relative;
+        }
+        .fragment-img { width: 100%; height: 100%; object-fit: cover; }
+        .fragment-info { color: #5e4a37; font-weight: 600; font-size: 1rem; line-height: 1.5; }
+        .book-nav {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 24px;
+            background: #f0e6d8;
+            border-top: 1px solid #e0d5c5;
+        }
+        .book-nav button {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #8b5a2b;
+            cursor: pointer;
+            padding: 4px 16px;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+        .book-nav button:active { opacity: 1; }
+        .book-nav button:disabled { opacity: 0.2; pointer-events: none; }
+
+        /* ===== 明信片弹窗 ===== */
+        .postcard-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(20, 10, 5, 0.75);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            visibility: hidden;
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 300;
+            padding: 20px;
+        }
+        .postcard-modal.show { visibility: visible; opacity: 1; }
+        .postcard {
+            width: 100%;
+            max-width: 360px;
+            height: 480px;
+            background: #fdf8f0;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5), 0 0 0 4px #fff inset;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transform: scale(0.9);
+            transition: transform 0.4s cubic-bezier(0.2, 1, 0.3, 1);
+            cursor: pointer;
+            border: 1px solid #d9b382;
+        }
+        .postcard-modal.show .postcard { transform: scale(1); }
+        
+        /* 明信片表面 */
+        .postcard-front {
+            position: absolute;
+            inset: 0;
+            background: #fdf8f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            transition: opacity 0.5s, transform 0.5s;
+            padding: 20px;
+        }
+        .postcard-front .ribbon {
+            position: absolute;
+            top: 0;
+            width: 40px;
+            height: 100%;
+            opacity: 0.6;
+        }
+        .ribbon-white { left: 20px; background: linear-gradient(180deg, #f0f0f0, #d0d0d0); box-shadow: 2px 0 5px rgba(0,0,0,0.1); }
+        .ribbon-black { right: 20px; background: linear-gradient(180deg, #2a2a2a, #1a1a1a); box-shadow: -2px 0 5px rgba(0,0,0,0.1); }
+        
+        .postcard-front .stamp {
+            position: absolute;
+            top: 20px;
+            right: 60px;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #d94f4f;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1rem;
+            transform: rotate(15deg);
+            box-shadow: inset 0 0 0 4px #fff, 0 4px 8px rgba(0,0,0,0.2);
+            border: 2px dashed #fff;
+            z-index: 10;
+            letter-spacing: 1px;
+        }
+        .postcard-front .address {
+            position: absolute;
+            bottom: 30px;
+            right: 60px;
+            font-size: 0.8rem;
+            color: #a0846a;
+            line-height: 1.6;
+            text-align: right;
+        }
+        .postcard-front .center-icon {
+            font-size: 5rem;
+            opacity: 0.15;
+            position: absolute;
+        }
+        .postcard-front .hint-text {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #8b5a2b;
+            font-size: 0.8rem;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+
+        /* 爱心箭穿信动画 */
+        .arrow-animation {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100px;
+            height: 100px;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 5rem;
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .arrow-animation.shoot {
+            animation: shootArrow 0.8s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+        }
+        @keyframes shootArrow {
+            0% { transform: translate(-50%, -50%) scale(0) rotate(-45deg); opacity: 0; }
+            30% { transform: translate(-50%, -50%) scale(1.5) rotate(-45deg); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1) rotate(-45deg); opacity: 1; }
+        }
+        .heart-burst {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 4rem;
+            opacity: 0;
+            z-index: 11;
+            pointer-events: none;
+        }
+        .heart-burst.show { animation: burst 0.8s ease-out forwards; }
+        @keyframes burst { 0% { opacity: 1; transform: translate(-50%,-50%) scale(1); } 100% { opacity: 0; transform: translate(-50%,-50%) scale(2.5); } }
+
+        /* 明信片内部（展开后） */
+        .postcard-inner {
+            position: absolute;
+            inset: 0;
+            background: #fff9f0;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.6s 0.2s;
+            border-radius: 12px;
+        }
+        .postcard-inner.show { opacity: 1; z-index: 3; }
+        .photo-frame {
+            width: 85%;
+            height: 65%;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15), 0 0 0 8px #fff, 0 0 0 10px #e0d5c5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            margin-bottom: 16px;
+            position: relative;
+        }
+        .photo-frame img { width: 100%; height: 100%; object-fit: cover; }
+        .photo-caption {
+            font-family: 'KaiTi', 'STKaiti', serif;
+            color: #5e4a37;
+            font-size: 1.1rem;
+            text-align: center;
+            line-height: 1.6;
+            font-weight: 600;
+        }
+        .close-postcard {
+            margin-top: 16px;
+            background: #ffcf96;
+            border: none;
+            padding: 10px 28px;
+            border-radius: 30px;
+            font-weight: 700;
+            color: #5e4a37;
+            box-shadow: 0 4px 0 #b9804b;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+        .close-postcard:active { transform: translateY(2px); box-shadow: 0 2px 0 #b9804b; }
+
+        /* 弹窗通用 */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(30, 20, 10, 0.65);
+            backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s ease, visibility 0.3s;
+            z-index: 100;
+            padding: 12px;
+        }
+        .modal-overlay.show { visibility: visible; opacity: 1; }
+        .heart-card {
+            background: #fff9f0;
+            max-width: 380px;
+            width: 100%;
+            border-radius: 48px 48px 40px 40px;
+            padding: 22px 18px 20px;
+            text-align: center;
+            box-shadow: 0 30px 40px rgba(0, 0, 0, 0.4), 0 0 0 5px #ffb7b7 inset;
+            animation: popIn 0.35s cubic-bezier(0.18, 1.3, 0.6, 1);
+            max-height: 92vh;
+            overflow-y: auto;
+        }
+        @keyframes popIn { 0% { transform: scale(0.75); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .heart-icon {
+            font-size: 2.8rem;
+            margin-bottom: 2px;
+            filter: drop-shadow(0 6px 10px rgba(255, 80, 120, 0.4));
+            animation: beat 1.2s infinite;
+        }
+        @keyframes beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+        .heart-card h2 { font-size: 1.4rem; color: #bc3f3f; margin-bottom: 4px; letter-spacing: 0.5px; }
+        .heart-card p.sub { font-size: 0.85rem; color: #6b4a3a; margin-bottom: 10px; font-weight: 500; }
+        .question {
+            background: #ffe6e6;
+            border-radius: 28px;
+            padding: 12px 10px;
+            margin-bottom: 12px;
+            font-weight: 700;
+            color: #9b2c2c;
+            font-size: 1rem;
+            border: 2px dashed #ff9393;
+            line-height: 1.4;
+        }
+        .ecg-container {
+            background: #1e1e2a;
+            border-radius: 18px;
+            padding: 8px;
+            margin-bottom: 12px;
+            box-shadow: inset 0 0 20px #00000066;
+            position: relative;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: 2px solid #3d3d5a;
+        }
+        .ecg-canvas { display: block; width: 100%; height: 100%; background: #0d0d14; border-radius: 10px; }
+        .heart-break-container {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .heart-break-container.show { opacity: 1; }
+        .heart-piece {
+            font-size: 2.6rem;
+            position: absolute;
+            transition: transform 1s cubic-bezier(0.3, 0.8, 0.6, 1), opacity 1s;
+            filter: drop-shadow(0 4px 12px #ff6b8b);
+        }
+        .heart-piece.left { transform: translateX(-8px) rotate(-12deg); }
+        .heart-piece.right { transform: translateX(8px) rotate(12deg) scaleX(-1); }
+        .heart-piece.broken-left { transform: translateX(-80px) rotate(-30deg) !important; opacity: 0.3; }
+        .heart-piece.broken-right { transform: translateX(80px) rotate(30deg) scaleX(-1) !important; opacity: 0.3; }
+        .btn-group { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+        .btn {
+            border: none;
+            background: #ffcf96;
+            font-weight: 700;
+            font-size: 0.95rem;
+            padding: 12px 8px;
+            border-radius: 50px;
+            color: #422b1a;
+            box-shadow: 0 5px 0 #b9804b, 0 4px 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.08s ease;
+            cursor: pointer;
+            flex: 1;
+            min-width: 64px;
+            touch-action: manipulation;
+        }
+        .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #b9804b; }
+        .btn:disabled { opacity: 0.55; transform: translateY(3px); box-shadow: 0 2px 0 #b9804b; pointer-events: none; }
+        .btn-option {
+            background: #d4e8ff;
+            box-shadow: 0 5px 0 #8aa9c9;
+            color: #1f3a5a;
+            flex: 1 1 30%;
+            font-size: 0.9rem;
+            padding: 10px 4px;
+        }
+        .btn-option.correct { background: #a8e6a3 !important; box-shadow: 0 5px 0 #5a9e54 !important; color: #1e4a1a; }
+        .btn-option.wrong { background: #ffb3b3 !important; box-shadow: 0 5px 0 #c25b5b !important; color: #6b1f1f; }
+        .result-text { font-size: 1.05rem; font-weight: 700; margin: 10px 0 4px; min-height: 1.6rem; }
+        .result-text.success { color: #2e7d32; }
+        .result-text.fail { color: #c62828; }
+        .countdown-number {
+            font-size: 3rem;
+            font-weight: 800;
+            color: #ff6b6b;
+            text-shadow: 0 4px 16px #ffb3b3;
+            margin: 2px 0;
+            animation: pulseCountdown 0.7s infinite;
+        }
+        @keyframes pulseCountdown { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+        .hidden { display: none !important; }
+        .mini-note { font-size: 0.7rem; color: #a0846a; margin-top: 6px; }
+
+        @media (max-width: 420px) {
+            .game-wrapper { padding: 12px 12px 20px; border-radius: 36px 36px 24px 24px; }
+            .score, .highscore { padding: 6px 12px; font-size: 1rem; }
+            .score span, .highscore span { font-size: 1.3rem; min-width: 48px; }
+            .heart-card { padding: 18px 14px 16px; border-radius: 36px; }
+            .heart-card h2 { font-size: 1.2rem; }
+            .question { font-size: 0.9rem; padding: 10px 8px; }
+            .ecg-container { height: 84px; }
+            .btn { font-size: 0.85rem; padding: 10px 4px; }
+            .btn-option { font-size: 0.8rem; padding: 8px 2px; }
+            .postcard { height: 420px; }
+            .postcard-front .stamp { width: 64px; height: 64px; font-size: 0.9rem; right: 40px; }
+        }
+    </style>
+</head>
+<body>
+<div class="game-wrapper">
+    <!-- 顶部导航 -->
+    <div class="top-nav">
+        <button class="nav-btn active" id="navGame">🌳 游戏</button>
+        <button class="nav-btn" id="navMy">📖 我的</button>
+    </div>
+
+    <!-- 游戏页面 -->
+    <div class="page active" id="pageGame">
+        <canvas id="gameCanvas" width="480" height="640"></canvas>
+        <div class="score-board">
+            <div class="score">🌿 得分 <span id="scoreDisplay">0</span></div>
+            <div class="highscore">💖 最高 <span id="highScoreDisplay">0</span></div>
+        </div>
+        <div class="hint">✨ 点击/轻触让小鸟飞 · 穿过树木 +1 · 集满 999 胜利 ✨</div>
+    </div>
+
+    <!-- 我的页面 -->
+    <div class="page" id="pageMy">
+        <div class="my-tabs">
+            <button class="my-tab active" id="tabRecord">📋 我的记录</button>
+            <button class="my-tab" id="tabCollection">🍂 我的收集</button>
+        </div>
+        <div class="my-content">
+            <!-- 我的记录 -->
+            <div id="recordView" style="width:100%;">
+                <div class="record-list" id="recordList">
+                    <div class="record-empty">还没有飞行记录，快去挑战吧 ✨</div>
+                </div>
+            </div>
+            <!-- 我的收集（爱心银杏树） -->
+            <div id="collectionView" class="hidden" style="width:100%;">
+                <div class="tree-container" id="treeContainer">
+                    <div class="tree-hint">🍂 点击银杏树，翻开收集册</div>
+                    <svg class="tree-svg" viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg">
+                        <!-- 树干 -->
+                        <path d="M150 380 L150 240 Q150 200 130 170 Q110 140 100 120" stroke="#8B5A2B" stroke-width="16" fill="none" stroke-linecap="round"/>
+                        <path d="M150 240 Q150 200 170 170 Q190 140 200 120" stroke="#8B5A2B" stroke-width="16" fill="none" stroke-linecap="round"/>
+                        <path d="M140 280 L100 260 M160 280 L200 260" stroke="#8B5A2B" stroke-width="12" fill="none" stroke-linecap="round"/>
+                        <!-- 金色树冠 (银杏叶团) -->
+                        <circle cx="150" cy="110" r="70" fill="#FFD700" opacity="0.9"/>
+                        <circle cx="100" cy="130" r="55" fill="#FFC125" opacity="0.9"/>
+                        <circle cx="200" cy="130" r="55" fill="#FFC125" opacity="0.9"/>
+                        <circle cx="80" cy="170" r="45" fill="#FFB90F" opacity="0.85"/>
+                        <circle cx="220" cy="170" r="45" fill="#FFB90F" opacity="0.85"/>
+                        <circle cx="120" cy="80" r="50" fill="#FFD700" opacity="0.9"/>
+                        <circle cx="180" cy="80" r="50" fill="#FFD700" opacity="0.9"/>
+                        <circle cx="150" cy="60" r="45" fill="#FFE066" opacity="0.9"/>
+                        <!-- 零散银杏叶 -->
+                        <text x="110" y="90" font-size="18" opacity="0.8">🍂</text>
+                        <text x="180" y="80" font-size="18" opacity="0.8">🍂</text>
+                        <text x="70" y="150" font-size="18" opacity="0.8">🍂</text>
+                        <text x="220" y="140" font-size="18" opacity="0.8">🍂</text>
+                        <!-- 地面落叶爱心造型 -->
+                        <g transform="translate(150, 370)">
+                            <text x="-60" y="0" font-size="22">🍂</text>
+                            <text x="-40" y="-10" font-size="22">🍂</text>
+                            <text x="-20" y="-20" font-size="22">🍂</text>
+                            <text x="0" y="-28" font-size="22">🍂</text>
+                            <text x="20" y="-20" font-size="22">🍂</text>
+                            <text x="40" y="-10" font-size="22">🍂</text>
+                            <text x="60" y="0" font-size="22">🍂</text>
+                            <text x="-30" y="10" font-size="22">🍂</text>
+                            <text x="-10" y="6" font-size="22">🍂</text>
+                            <text x="10" y="6" font-size="22">🍂</text>
+                            <text x="30" y="10" font-size="22">🍂</text>
+                            <text x="-50" y="18" font-size="22">🍂</text>
+                            <text x="-20" y="20" font-size="22">🍂</text>
+                            <text x="0" y="22" font-size="22">🍂</text>
+                            <text x="20" y="20" font-size="22">🍂</text>
+                            <text x="50" y="18" font-size="22">🍂</text>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========== 收集册书本弹窗 ========== -->
+<div class="book-modal" id="bookModal">
+    <div class="book">
+        <div class="book-page">
+            <div id="bookContent" style="display:flex; flex-direction:column; align-items:center;">
+                <div class="fragment-display" id="fragmentDisplay">📭</div>
+                <div class="fragment-info" id="fragmentInfo">还没有收集到碎片哦~<br>飞行超过30分即可获得</div>
+            </div>
+            <div class="page-num" id="pageNum">1 / 2</div>
+        </div>
+        <div class="book-nav">
+            <button id="prevPage" disabled>◀ 上一页</button>
+            <button id="nextPage">下一页 ▶</button>
+        </div>
+    </div>
+</div>
+
+<!-- ========== 明信片弹窗 ========== -->
+<div class="postcard-modal" id="postcardModal">
+    <div class="postcard" id="postcard">
+        <!-- 明信片表面 -->
+        <div class="postcard-front" id="postcardFront">
+            <div class="ribbon ribbon-white"></div>
+            <div class="ribbon ribbon-black"></div>
+            <div class="stamp">北京</div>
+            <div class="address">
+                心动森林<br>
+                浪漫邮局
+            </div>
+            <div class="center-icon">💌</div>
+            <div class="hint-text">轻触打开明信片</div>
+        </div>
+        
+        <!-- 爱心箭动画 -->
+        <div class="arrow-animation" id="arrowAnim">🏹</div>
+        <div class="heart-burst" id="heartBurst">💖</div>
+
+        <!-- 明信片内部（照片） -->
+        <div class="postcard-inner" id="postcardInner">
+            <
